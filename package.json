@@ -19,8 +19,7 @@
       ],
       "filesystem": [
         "~/.cache/opencode-advisor/notes/**",
-        "~/.cache/opencode-advisor/status/**",
-        "~/.config/opencode/opencode.json"
+        "~/.cache/opencode-advisor/status/**"
       ]
     }
   },

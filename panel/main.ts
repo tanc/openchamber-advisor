@@ -22,7 +22,7 @@ import { connectHost } from "@openchamber/sdk"
 
 const host = connectHost()
 const NOTES_DIR = "~/.cache/opencode-advisor/notes"
-const GLOBAL_CFG = "~/.config/opencode/opencode.json"
+const STATUS_DIR = "~/.cache/opencode-advisor/status"
 
 const elSession = document.querySelector<HTMLSpanElement>("#session")!
 const elState = document.querySelector<HTMLDivElement>("#state")!
@@ -57,23 +57,19 @@ function clearBanner(): void {
   elState.style.display = "none"
 }
 
-async function pluginState(): Promise<{ installed: boolean; enabled: boolean; detail: string }> {
+/**
+ * Installed/enabled state, derived from the notes directory alone — the panel
+ * deliberately holds no grant on the user's opencode.json (least privilege),
+ * so "registered but disabled in config" is indistinguishable from "not
+ * installed" here. Both render the same soft banner.
+ */
+async function pluginState(): Promise<{ working: boolean; detail: string }> {
   try {
-    const { content } = await host.readFile(GLOBAL_CFG)
-    const cfg = JSON.parse(content) as {
-      plugins?: Array<string | { package?: string; options?: { enabled?: boolean } }>
-    }
-    const found = (cfg.plugins ?? []).find((p) =>
-      typeof p === "string" ? p.includes("opencode-advisor") : (p.package ?? "").includes("opencode-advisor"),
-    )
-    if (!found) return { installed: false, enabled: false, detail: "not in the global config" }
-    if (typeof found === "object" && found.options?.enabled === false)
-      return { installed: true, enabled: false, detail: "registered but disabled in config" }
-    return { installed: true, enabled: true, detail: "enabled" }
-  } catch (err) {
-    const code = (err as { code?: string }).code
-    if (code === "NOT_FOUND") return { installed: false, enabled: false, detail: "no global opencode.json" }
-    return { installed: false, enabled: false, detail: `unreadable (${(err as Error).message})` }
+    const list = await host.listDir(NOTES_DIR)
+    const lines = (list.entries ?? []).length
+    return { working: lines > 0, detail: lines > 0 ? "delivering notes" : "no notes directory content yet" }
+  } catch {
+    return { working: false, detail: "no notes directory yet" }
   }
 }
 
@@ -178,35 +174,24 @@ async function refresh(): Promise<void> {
   refreshing = true
   try {
     const plugin = await pluginState()
-    if (!plugin.installed) {
+    if (!plugin.working) {
       banner(
         "warn",
-        `The <b>opencode-advisor</b> plugin is ${esc(plugin.detail)}. ` +
-          "Install it from <code>~/.config/opencode/opencode.json</code> — this panel reads the notes it delivers.",
+        `No advisor activity yet (${esc(plugin.detail)}). ` +
+          "If it should be running: check that the <b>opencode-advisor</b> plugin is installed and enabled, " +
+          "then run <code>/advisor on</code> in a session.",
       )
       elList.innerHTML = ""
       return
     }
-    if (!plugin.enabled) {
-      banner("warn", `The advisor plugin is <b>disabled</b> (${esc(plugin.detail)}). Run <code>/advisor on</code> in a session.`)
-    } else {
-      clearBanner()
-    }
-    let entries: Entry[]
+    clearBanner()
+    let entries: Entry[] = []
     try {
       entries = await loadEntries()
     } catch (err) {
       const code = (err as { code?: string }).code
-      if (code === "NOT_FOUND" || code === "NO_DIRECTORY") {
-        banner(
-          "warn",
-          "No notes directory yet — the advisor writes one line per delivered note once it runs. " +
-            "If the plugin is enabled and sessions have run, check that the server that reviews is the same one this app drives.",
-        )
-        elList.innerHTML = ""
-        return
-      }
-      throw err
+      if (code !== "NOT_FOUND" && code !== "NO_DIRECTORY") throw err
+      // NOT_FOUND: the per-project file exists only after the first delivered note.
     }
     let status: StatusCard | null = null
     try {
