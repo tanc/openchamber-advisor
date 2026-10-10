@@ -11,6 +11,12 @@
  * install state is checked against `~/.config/opencode/opencode.json`.
  * `readFile` NOT_FOUND means "no notes yet" — the file exists only after the
  * first delivered note.
+ *
+ * Why listDir on the granted root works: the host's matcher gives a pattern
+ * ending in `/**` a `(?:/.*)?` tail, which matches the directory itself —
+ * "a guest may list the root it was granted" (packages/web/server/lib/guests/files.js,
+ * globToRegExp). `~` is expanded before matching, and both sides are
+ * canonicalized identically.
  */
 import { connectHost } from "@openchamber/sdk"
 
