@@ -122,9 +122,17 @@ async function loadStatus(): Promise<StatusCard | null> {
       }
     }
     if (cards.length === 0) return null
-    const forProject = cards.filter((c) => contextDirectory && c.directory === contextDirectory)
-    const pool = forProject.length > 0 ? forProject : cards
-    return pool.sort((a, b) => b.t - a.t)[0] ?? null
+    // Prefer the exact session match; a sessionless frame falls back to the
+    // open project. Directory comparison is last resort because one path can
+    // have two spellings on this machine (/home/tanc vs /var/home/tanc — the
+    // same place through a symlink), so equality there can silently never
+    // match. The session id is canonical on both sides.
+    if (sessionId) {
+      const forSession = cards.filter((c) => c.sessionID === sessionId)
+      if (forSession.length > 0) return forSession.sort((a, b) => b.t - a.t)[0] ?? null
+    }
+    const forProject = contextDirectory ? cards.filter((c) => c.directory === contextDirectory) : []
+    return forProject.sort((a, b) => b.t - a.t)[0] ?? null
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code === "NOT_FOUND" || code === "NO_DIRECTORY") return null
