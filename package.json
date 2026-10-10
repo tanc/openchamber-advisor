@@ -4,7 +4,9 @@
   "private": true,
   "openchamber": {
     "apiVersion": 1,
-    "engines": { "openchamber": ">=1.24.0" },
+    "engines": {
+      "openchamber": ">=1.24.0"
+    },
     "contributes": {
       "panel": {
         "id": "advisor-notes",
@@ -12,12 +14,17 @@
         "icon": "lightbulb",
         "entry": "panel/index.html"
       },
-      "capabilities": ["files"],
+      "capabilities": [
+        "files"
+      ],
       "filesystem": [
         "~/.cache/opencode-advisor/notes/**",
         "~/.cache/opencode-advisor/status/**",
         "~/.config/opencode/opencode.json"
       ]
     }
+  },
+  "dependencies": {
+    "@openchamber/sdk": "2.2.0"
   }
 }
