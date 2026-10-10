@@ -8,7 +8,8 @@
  * would silently render an empty panel) and filters on the live session id.
  *
  * Notes reach the panel through the declared `filesystem` glob; the plugin's
- * install state is checked against `~/.config/opencode/opencode.json`.
+ * working state is derived from the notes directory alone — the panel
+ * deliberately holds no grant on the user's `opencode.json` (least privilege).
  * `readFile` NOT_FOUND means "no notes yet" — the file exists only after the
  * first delivered note.
  *
