@@ -8,16 +8,21 @@
       * { box-sizing: border-box; }
       body {
         margin: 0; padding: 10px 12px 16px;
-        font: 13px/1.45 ui-sans-serif, system-ui, sans-serif;
+        font: 13px/1.45 var(--oc-font, ui-sans-serif, system-ui, sans-serif);
         color: var(--oc-fg, CanvasText); background: transparent;
       }
       .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
       .head h1 { font-size: 12px; font-weight: 600; margin: 0; opacity: .7; text-transform: uppercase; letter-spacing: .04em; }
       .head .live { font-size: 11px; opacity: .5; }
-      .state { padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, CanvasText 6%, transparent); font-size: 12.5px; }
+      .state { padding: 8px 10px; border-radius: var(--oc-radius, 8px); background: var(--oc-muted-surface, color-mix(in srgb, CanvasText 6%, transparent)); font-size: 12.5px; color: var(--oc-muted, var(--oc-fg, CanvasText)); }
       .state.warn { background: color-mix(in srgb, #d97706 12%, transparent); }
       .state.err  { background: color-mix(in srgb, #dc2626 12%, transparent); }
-      .note { border: 1px solid color-mix(in srgb, CanvasText 12%, transparent); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+      .note {
+        border: 1px solid var(--oc-border, color-mix(in srgb, CanvasText 12%, transparent));
+        border-radius: var(--oc-radius, 10px);
+        background: var(--oc-muted-surface, transparent);
+        padding: 8px 10px; margin: 8px 0;
+      }
       .note .meta { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
       .sev { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; }
       .sev.nit     { background: color-mix(in srgb, #64748b 18%, transparent); }
@@ -27,7 +32,7 @@
       .note.status { border-color: color-mix(in srgb, #2563eb 30%, transparent); }
       .when { font-size: 11px; opacity: .55; }
       .advisor { font-size: 11px; opacity: .55; margin-left: auto; }
-      .note .text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--oc-fg, CanvasText); }
+      .note .text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--oc-muted, var(--oc-fg, CanvasText)); }
       .note.status .text { color: var(--oc-muted, var(--oc-fg, CanvasText)); }
       .empty { color: var(--oc-muted, inherit); font-size: 12.5px; padding: 6px 2px; }
       .state { color: var(--oc-fg, CanvasText); }
