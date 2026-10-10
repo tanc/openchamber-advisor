@@ -39,6 +39,7 @@ interface Entry {
 
 let sessionId: string | null = null
 let sessionTitle = ""
+let contextDirectory: string | null = null
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
@@ -98,27 +99,69 @@ async function loadEntries(): Promise<Entry[]> {
   return out.sort((a, b) => b.t - a.t)
 }
 
-function paint(entries: Entry[], all: number): void {
+interface StatusCard {
+  t: number
+  sessionID: string
+  directory: string
+  body: string
+}
+
+/** Latest /advisor reply for the open project, from the plugin's status bridge. */
+async function loadStatus(): Promise<StatusCard | null> {
+  try {
+    const list = await host.listDir("~/.cache/opencode-advisor/status")
+    const cards: StatusCard[] = []
+    for (const file of list.entries) {
+      if (!file.name.endsWith(".json")) continue
+      try {
+        const { content } = await host.readFile(`~/.cache/opencode-advisor/status/${file.name}`)
+        const parsed = JSON.parse(content) as StatusCard
+        if (typeof parsed.body === "string") cards.push(parsed)
+      } catch {
+        // A file replaced between listDir and readFile: skip it.
+      }
+    }
+    if (cards.length === 0) return null
+    const forProject = cards.filter((c) => contextDirectory && c.directory === contextDirectory)
+    const pool = forProject.length > 0 ? forProject : cards
+    return pool.sort((a, b) => b.t - a.t)[0] ?? null
+  } catch (err) {
+    const code = (err as { code?: string }).code
+    if (code === "NOT_FOUND" || code === "NO_DIRECTORY") return null
+    throw err
+  }
+}
+
+function paint(entries: Entry[], all: number, status: StatusCard | null): void {
   const mine = sessionId ? entries.filter((e) => e.sessionID === sessionId) : []
   elSession.textContent = sessionTitle || sessionId || ""
+
+  const statusHtml = status
+    ? `<div class="note status"><div class="meta"><span class="sev status">status</span>` +
+      `<span class="when">${fmtTime(status.t)}</span></div>` +
+      `<div class="text">${esc(status.body)}</div></div>`
+    : ""
 
   if (mine.length === 0) {
     const across = entries.length
     elList.innerHTML =
+      statusHtml +
       `<div class="empty">No notes for this session${sessionId ? "" : " (open a session)"} yet.` +
       (across > 0 ? ` ${all} delivered across other sessions on this machine.</div>` : "</div>")
     return
   }
-  elList.innerHTML = mine
-    .map(
-      (e) =>
-        `<div class="note"><div class="meta">` +
-        `<span class="sev ${esc(e.severity)}">${esc(e.severity)}</span>` +
-        `<span class="when">${fmtTime(e.t)}</span>` +
-        `<span class="advisor">${esc(e.advisor)}${e.instance ? ` · ${esc(e.instance)}` : ""}</span>` +
-        `</div><div class="text">${esc(e.note)}</div></div>`,
-    )
-    .join("")
+  elList.innerHTML =
+    statusHtml +
+    mine
+      .map(
+        (e) =>
+          `<div class="note"><div class="meta">` +
+          `<span class="sev ${esc(e.severity)}">${esc(e.severity)}</span>` +
+          `<span class="when">${fmtTime(e.t)}</span>` +
+          `<span class="advisor">${esc(e.advisor)}${e.instance ? ` · ${esc(e.instance)}` : ""}</span>` +
+          `</div><div class="text">${esc(e.note)}</div></div>`,
+      )
+      .join("")
 }
 
 let refreshing = false
@@ -157,7 +200,13 @@ async function refresh(): Promise<void> {
       }
       throw err
     }
-    paint(entries, entries.length)
+    let status: StatusCard | null = null
+    try {
+      status = await loadStatus()
+    } catch {
+      // A status card is a bonus; never let it break the notes render.
+    }
+    paint(entries, entries.length, status)
   } catch (err) {
     banner("err", `Panel error: ${esc((err as Error).message)}`)
   } finally {
@@ -171,9 +220,15 @@ host.onSession((session) => {
   void refresh()
 })
 
+host.onDirectory((directory) => {
+  contextDirectory = directory
+  void refresh()
+})
+
 host.onReady(async (context) => {
   sessionId = context.session?.id ?? null
   sessionTitle = context.session?.title ?? ""
+  contextDirectory = context.directory
   void refresh()
   setInterval(() => void refresh(), 3000)
 })

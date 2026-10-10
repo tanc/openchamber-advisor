@@ -15,6 +15,7 @@
       "capabilities": ["files"],
       "filesystem": [
         "~/.cache/opencode-advisor/notes/**",
+        "~/.cache/opencode-advisor/status/**",
         "~/.config/opencode/opencode.json"
       ]
     }
