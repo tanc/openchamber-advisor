@@ -20,6 +20,7 @@
  * canonicalized identically.
  */
 import { connectHost } from "@openchamber/sdk"
+import { applyHostReady } from "@openchamber/sdk/ui"
 
 const host = connectHost()
 const NOTES_DIR = "~/.cache/opencode-advisor/notes"
@@ -220,6 +221,11 @@ host.onDirectory((directory) => {
 })
 
 host.onReady(async (context) => {
+  // Paint the host theme onto the iframe root: CSS variables do not cross the
+  // iframe boundary, so without this every var(--oc-…) reference falls through
+  // to its fallback and the panel renders browser-CanvasText-bright in dark
+  // theme — identical whatever the stylesheet says.
+  applyHostReady(context, document.documentElement)
   sessionId = context.session?.id ?? null
   sessionTitle = context.session?.title ?? ""
   contextDirectory = context.directory
