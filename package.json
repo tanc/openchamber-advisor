@@ -1,0 +1,22 @@
+{
+  "name": "tanc-openchamber-advisor",
+  "version": "1.0.0",
+  "private": true,
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": { "openchamber": ">=1.24.0" },
+    "contributes": {
+      "panel": {
+        "id": "advisor-notes",
+        "name": "Advisor",
+        "icon": "lightbulb",
+        "entry": "panel/index.html"
+      },
+      "capabilities": ["files"],
+      "filesystem": [
+        "~/.cache/opencode-advisor/notes/**",
+        "~/.config/opencode/opencode.json"
+      ]
+    }
+  }
+}
